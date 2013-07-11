@@ -21,6 +21,7 @@ References:
 */
 
 var fs = require('fs');
+var rest = require('restler');
 var program = require('commander');
 var cheerio = require('cheerio');
 var HTMLFILE_DEFAULT = "index.html";
@@ -60,11 +61,36 @@ var clone = function(fn) {
     return fn.bind({});
 };
 
+
+var parseResponse = function(result, response) {
+    console.log(result);
+    if (result instanceof Error) {
+        console.error('Error: ' + util.format(response.message));
+    } else {
+      console.log("writing"+result);
+      fs.writeFileSync('tmp_url.html', result);
+      return 'tmp_url.html';
+    }
+};
+
+
+
 if(require.main == module) {
     program
         .option('-c, --checks <check_file>', 'Path to checks.json', clone(assertFileExists), CHECKSFILE_DEFAULT)
         .option('-f, --file <html_file>', 'Path to index.html', clone(assertFileExists), HTMLFILE_DEFAULT)
+        .option('-u, --url <url_address>', 'url to page to check')
         .parse(process.argv);
+
+    if(program.url != undefined){
+      console.log("IN HERE");
+      console.log(program.url);
+      var t = "http://frozen-ridge-9321.herokuapp.com/"
+      program.file = rest.get(t).on('complete', function(r){fs.writeFileSync('tmp_url.html', r)}); 
+      program.file = "tmp_url.html";
+      console.log("<<"+program.file);
+    }
+
     var checkJson = checkHtmlFile(program.file, program.checks);
     var outJson = JSON.stringify(checkJson, null, 4);
     console.log(outJson);
