@@ -45,7 +45,16 @@ var loadChecks = function(checksfile) {
 };
 
 var checkHtmlFile = function(htmlfile, checksfile) {
-    $ = cheerioHtmlFile(htmlfile);
+  return checkHtml(cheerioHtmlFile(htmlfile), checksfile);
+}
+
+var checkHtmlString = function (str, checksfile) {
+  var c = cheerio.load(str)
+  return checkHtml(cheerio.load(str), checksfile);
+}
+
+var checkHtml = function($, checksfile) {
+    //$ = cheerioHtmlFile(htmlfile);
     var checks = loadChecks(checksfile).sort();
     var out = {};
     for(var ii in checks) {
@@ -62,19 +71,6 @@ var clone = function(fn) {
 };
 
 
-var parseResponse = function(result, response) {
-    console.log(result);
-    if (result instanceof Error) {
-        console.error('Error: ' + util.format(response.message));
-    } else {
-      console.log("writing"+result);
-      fs.writeFileSync('tmp_url.html', result);
-      return 'tmp_url.html';
-    }
-};
-
-
-
 if(require.main == module) {
     program
         .option('-c, --checks <check_file>', 'Path to checks.json', clone(assertFileExists), CHECKSFILE_DEFAULT)
@@ -82,18 +78,26 @@ if(require.main == module) {
         .option('-u, --url <url_address>', 'url to page to check')
         .parse(process.argv);
 
-    if(program.url != undefined){
-      console.log("IN HERE");
-      console.log(program.url);
-      var t = "http://frozen-ridge-9321.herokuapp.com/"
-      program.file = rest.get(t).on('complete', function(r){fs.writeFileSync('tmp_url.html', r)}); 
-      program.file = "tmp_url.html";
-      console.log("<<"+program.file);
+    var checkJson = '';
+
+    /** given a dict, outputs the json representation to stdout */
+    var outputJson = function(dict) {
+      var outJson = JSON.stringify(dict, null, 4);
+      console.log(outJson);
     }
 
-    var checkJson = checkHtmlFile(program.file, program.checks);
-    var outJson = JSON.stringify(checkJson, null, 4);
-    console.log(outJson);
+    if(program.url != undefined){
+      program.file = './tmp_url.html';
+      var res = '';
+      rest.get(program.url).on('complete',
+        function(r) {
+          outputJson(checkHtmlString(""+r, program.checks));
+        }
+      ); 
+    } else {
+      outputJson(checkHtmlFile(program.file, program.checks));
+    }
+
 } else {
     exports.checkHtmlFile = checkHtmlFile;
 }
