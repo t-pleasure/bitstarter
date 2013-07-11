@@ -87,8 +87,6 @@ if(require.main == module) {
     }
 
     if(program.url != undefined){
-      program.file = './tmp_url.html';
-      var res = '';
       rest.get(program.url).on('complete',
         function(r) {
           outputJson(checkHtmlString(""+r, program.checks));
